@@ -105,4 +105,7 @@ int main (){
     heap.update_key(1, 3); 
     cout << "after updating index 1 to 3: ";
     heap.display();
+    heap.deleteRoot();
+    cout <<"deleted root: ";
+    heap.display();
 }
