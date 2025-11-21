@@ -3,129 +3,132 @@
 #include <string>
 using namespace std;
 
-struct Node {
+class Node{
+public:
     string key;
     string value;
     Node* next;
-    
-    Node(string k, string v) : key(k), value(v), next(nullptr) {}
-};
-
-class LinkedList {
-    private:
-    Node* head;
-    
-    public:
-    LinkedList() : head(nullptr) {}
-    
-    void insert(string k, string v) {
-        Node* curr_node = head;
-        while (curr_node != nullptr) {
-            if (curr_node->key == k) {
-                curr_node->value = v;
-                return;
-            }
-            curr_node = curr_node->next;
-        }
-        
-        Node* new_node = new Node(k, v);
-        new_node->next = head;
-        head = new_node;
-    }
-    
-    string search(string k) {
-        Node* curr_node = head;
-        while (curr_node != nullptr) {
-            if (curr_node->key == k) {
-                return curr_node->value;
-            }
-            curr_node = curr_node->next;
-        }
-        return "";
-    }
-    
-    void display() {
-        Node* curr_node = head;
-        while (curr_node != nullptr) {
-            cout << "(" << curr_node->key << "=" << curr_node->value << ")";
-            if (curr_node->next != nullptr) {
-                cout << " => ";
-            }
-            curr_node = curr_node->next;
-        }
-    }
-    
-    ~LinkedList() {
-        Node* curr_node = head;
-        while (curr_node != nullptr) {
-            Node* temp_node = curr_node;
-            curr_node = curr_node->next;
-            delete temp_node;
-        }
-    }
+    Node(string k, string v): key(k),value(v),next(nullptr) {}
 };
 
 class HashTable {
-    private:
-    LinkedList* buckets;
-    int totalBuckets;
+private:
+    Node** buckets;
+    int numBuckets;
     
-    int calculateHash(string k) {
-        int ascii_total = 0;
-        for (int i = 0; i < k.length(); i++) {
-            ascii_total += (int)k[i];
+    int hashFunction(string str) {
+        int sum = 0;
+        for (int i = 0; i < str.length(); i++) {
+            sum +=static_cast<int>(str[i]);
         }
-        return ascii_total % totalBuckets;
-    } 
-    public:
-    HashTable(int bucket_count = 10) {
-        totalBuckets = bucket_count;
-        buckets = new LinkedList[totalBuckets];
+        return sum%numBuckets;
     }
-    
-    void insert(string k, string v) {
-        int bucket_index = calculateHash(k);
-        cout << "Adding " << k << " to bucket " << bucket_index << endl;
-        buckets[bucket_index].insert(k, v);
-    }
-    
-    string search(string k) {
-        int bucket_index = calculateHash(k);
-        return buckets[bucket_index].search(k);
-    }
-    
-    void display() {
-        for (int i = 0; i < totalBuckets; i++) {
-            cout << "Bucket[" << i << "]: ";
-            buckets[i].display();
-            cout << endl;
+
+public:
+    HashTable(int size=10): numBuckets(size) {
+        buckets = new Node*[numBuckets];
+        for (int i = 0; i<numBuckets;i++) {
+            buckets[i]= nullptr;
         }
-    }
-    
-    void showBucket(string k) {
-        int bucket_index = calculateHash(k);
-        cout << "Bucket[" << bucket_index << "] for '" << k << "': ";
-        buckets[bucket_index].display();
-        cout << endl;
     }
     
     ~HashTable() {
+        clear();
         delete[] buckets;
+    }
+    
+    void insert(string key, string value) {
+        int index = hashFunction(key);
+        Node* current = buckets[index];
+        while (current != nullptr) {
+            if (current->key == key) {
+                cout << "Key "<< key <<" already exists. Updating value from " << current->value << " to " << value << "' in bucket "<<index<<endl;
+                current->value=value;
+                return;
+            }
+            current=current->next;
+        }
+        Node* newNode = new Node(key, value);
+        newNode->next = buckets[index];
+        buckets[index] = newNode;
+        
+        cout <<"Inserted key "<<key<< " with value " <<value <<" in bucket " <<index << endl;
+    }
+    
+    string search(string key) {
+        int index = hashFunction(key);
+        Node* current = buckets[index];
+        
+        while (current != nullptr){
+            if (current->key == key)
+                return current->value;
+            current = current->next;
+        }
+        return"Key not found";
+    }
+    
+    bool remove(string key) {
+        int index= hashFunction(key);
+        Node* current =buckets[index];
+        Node* prev =nullptr;
+        
+        while (current!=nullptr) {
+            if (current->key== key) {
+                if (prev ==nullptr) {buckets[index] = current->next;} 
+                else {  prev->next = current->next;}
+                cout << "Removed key "<< key << "from bucket "<<index << endl;
+                delete current;
+                return true;
+            }
+            prev = current;
+            current= current->next;
+        }
+        
+        cout <<key <<" not found" << endl;
+        return false;
+    }
+    
+    void display() {
+        cout << endl<< "hash table:" << endl;        
+        for (int i=0; i<numBuckets; i++) {
+            cout << "bucket " << i<<": ";
+            Node* current = buckets[i];
+            if (current == nullptr) { cout << "Empty"; } 
+            else {
+                while (current != nullptr) {
+                    cout  << current->key << ":" << current->value;
+                    if (current->next != nullptr) {
+                        cout << " -> ";
+                    }
+                    current= current->next;
+                }
+            }
+            cout<< endl;
+        }
+    }
+    
+    void clear() {
+        for (int i = 0; i < numBuckets; i++) {
+            Node* current= buckets[i];
+            while (current != nullptr) {
+                Node* temp = current;
+                current = current->next;
+                delete temp;
+            }
+            buckets[i] = nullptr;
+        }
     }
 };
 
 int main() {
-    HashTable myhash(5);
+    HashTable myhash(10); 
     myhash.insert("A", "aaaaa");
     myhash.insert("B", "bbbbb");
     myhash.insert("C", "ccccc");
     myhash.insert("A", "zzzzz");
     myhash.display();
-    cout << "Find A: " << myhash.search("A") << endl;
-    cout << "Find B: " << myhash.search("B") << endl;
-    cout << "Find C: " << myhash.search("C") << endl;
-    cout << "Find D: " << myhash.search("D") << endl;
-    myhash.showBucket("A");
-    myhash.showBucket("B");
-    myhash.showBucket("C");
+    cout <<"search for keyA: " << myhash.search("A") << endl;
+    myhash.remove("B");
+    cout << "after removing key B: "<<endl;
+    myhash.display();
 }
