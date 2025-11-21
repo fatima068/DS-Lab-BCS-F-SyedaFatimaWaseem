@@ -113,7 +113,7 @@ int main() {
     HashDictionary dict;
     dict.insertEntry("AB", "FASTNU");
     dict.insertEntry("CD", "CS");
-    dict.insertEntry("EF", "ikrash"); 
+    dict.insertEntry("EF", "hi"); 
     dict.searchKey("AB");
     dict.deleteKey("EF");
     dict.displayIndex(31);  
