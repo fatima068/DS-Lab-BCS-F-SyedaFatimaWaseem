@@ -1,121 +1,152 @@
-/*Task # 2: Some ABC university students want to develop an ASCII code-based dictionary app for their Final Year Project. This app should allow the users to perform the following operations:
-a) Add_Record () This function will take a string input from user and add into the dictionary. For adding the string user will use a unique hash function k MOD 100 (table size must be 100, for k user will calculate the SUM of ASCII character of that word).
+/* Some ABC university students want to develop an ASCII code-based dictionary app for their Final Year Project. This app should allow the users to perform the following operations:
+
+a) Add_Record (): This function will take a string input from user and add into the dictionary. For adding the string user will use a unique hash function k MOD 100 (table size must be 100, for k user will calculate the SUM of ASCII character of that word).
+
 b) Word_Search () User will only pass a single string. If string is not available then generate an error message.
-c) Print_Dictionary () Users can also display the complete dictionary.*/
+
+c) Print_Dictionary () Users can also display the complete dictionary.
+Note: Use Separate Chaining in case of collisions.
+Output:
+  -search key AB: FASTNU
+  -key EF deleted successfully !
+  -index 31: (AB, FASTNU)
+  -index 35: (CD, CS) */
 #include <iostream>
 #include <string>
 using namespace std;
 
-struct TableEntry {
+class Node {
+public:
     string key;
     string value;
-    TableEntry* next;
-    TableEntry(string k, string v) : key(k), value(v), next(nullptr) {}
+    Node* next;
+    Node(string k,string v) : key(k),value(v),next(nullptr) {}
 };
 
-class HashDictionary {
+class HashTable{
 private:
-    TableEntry* table[100];
-    int computeHash(string key) {
+    Node** buckets;
+    int numBuckets;
+    
+    int hashFunction(string str) {
         int sum = 0;
-        for (char c : key) {
-            sum += (int)c;
+        for (int i=0; i<str.length(); i++){
+            sum +=static_cast<int>(str[i]);
         }
-        return sum % 100;
+        return sum%numBuckets;
     }
-    public:
-    HashDictionary() {
-        for (int i = 0; i < 100; i++) {
-            table[i] = nullptr;
+
+public:
+    HashTable(): numBuckets(100) {
+        buckets= new Node*[numBuckets];
+        for (int i=0; i<numBuckets; i++) {
+            buckets[i]= nullptr;
         }
     }
     
-    void insertEntry(string key, string value) {
-        int index = computeHash(key);
-        TableEntry* newEntry = new TableEntry(key, value);
-        newEntry->next = table[index];
-        table[index] = newEntry;
+    ~HashTable(){
+        clear();
+        delete[] buckets;
     }
     
-    void searchKey(string key) {
-        int index = computeHash(key);
-        TableEntry* current = table[index];
+    void Add_Record(string key, string word) {
+        int index = hashFunction(key);
+        Node* current = buckets[index];
         
         while (current != nullptr) {
-            if (current->key == key) {
-                cout << "search key " << key << ": " << current->value << endl;
+            if (current->key== key) {
+                cout << "key " << key<<" already exists in dictionary" << endl;
                 return;
             }
             current = current->next;
         }
-        cout << "Key " << key << " not found!" << endl;
+        Node* newNode= new Node(key, word);
+        newNode->next =buckets[index];
+        buckets[index] =newNode;
+        
+        cout << "key "<<key<< " added successfully at index " <<index << endl;
     }
     
-    void deleteKey(string key) {
-        int index = computeHash(key);
-        TableEntry* current = table[index];
-        TableEntry* prev = nullptr;
+    void Word_Search(string key) {
+        int index = hashFunction(key);
+        Node* current = buckets[index];
+        
+        while (current != nullptr) {
+            if (current->key == key) {
+                cout << "key "<<key << " found: " << current->value<< endl;
+                return;
+            }
+            current = current->next;
+        }
+        cout<< key << " not found in dictionary"<< endl;
+    }
+    
+    void Print_Dictionary() {
+        bool isEmpty = true;        
+        for (int i = 0; i < numBuckets; i++) {
+            Node* current = buckets[i];
+            if (current != nullptr) {
+                isEmpty = false;
+                cout << "Index " << i << ": ";
+                while (current != nullptr) {
+                    cout<< current->key<< ", " <<current->value;
+                    if (current->next != nullptr)
+                        cout << " -> ";
+                    current = current->next;
+                }
+                cout <<endl;
+            }
+        }
+        
+        if (isEmpty) {
+            cout << "dictionary empty" << endl;
+        }
+    }
+    
+    bool Delete_Word(string key) {
+        int index = hashFunction(key);
+        Node* current = buckets[index];
+        Node* prev = nullptr;
+        
         while (current != nullptr) {
             if (current->key == key) {
                 if (prev == nullptr) {
-                    table[index] = current->next;
-                } 
-                else {
+                    buckets[index] = current->next;
+                } else {
                     prev->next = current->next;
                 }
+                cout <<key << " deleted " << endl;
                 delete current;
-                cout << "key " << key << " deleted successfully !" << endl;
-                return;
+                return true;
             }
             prev = current;
             current = current->next;
         }
-        cout << "Key " << key << " not found for deletion!" << endl;
+        cout<< key << " not found "<< endl;
+        return false;
     }
     
-    void displayIndex(int index) {
-        if (index < 0 || index >= 100) {
-            cout << "Invalid index!" << endl;
-            return;
-        }
-        cout << "index " << index << ": ";
-        TableEntry* current = table[index];
-        bool first = true;
-        
-        while (current != nullptr) {
-            if (!first) {
-                cout << " -> ";
-            }
-            cout << "(" << current->key << ", " << current->value << ")";
-            first = false;
-            current = current->next;
-        }
-        
-        if (first) {
-            cout << "empty";
-        }
-        cout << endl;
-    }
-    
-    ~HashDictionary() {
-        for (int i = 0; i < 100; i++) {
-            TableEntry* current = table[i];
-            while (current != nullptr) {
-                TableEntry* temp = current;
-                current = current->next;
+    void clear() {
+        for (int i=0; i<numBuckets; i++) {
+            Node* current= buckets[i];
+            while (current!= nullptr) {
+                Node* temp =current;
+                current =current->next;
                 delete temp;
             }
+            buckets[i]=nullptr;
         }
     }
 };
 
 int main() {
-    HashDictionary dict;
-    dict.insertEntry("AB", "FASTNU");
-    dict.insertEntry("CD", "CS");
-    dict.insertEntry("EF", "hi"); 
-    dict.searchKey("AB");
-    dict.deleteKey("EF");
-    dict.displayIndex(31);  
-    dict.displayIndex(35);  
+    HashTable dictionary;    
+    dictionary.Add_Record("AB", "FASTNU");
+    dictionary.Add_Record("CD", "CS");
+    dictionary.Add_Record("EF", "Computer Science");
+    dictionary.Word_Search("AB");
+    dictionary.Word_Search("XYZ");
+    dictionary.Delete_Word("EF"); 
+    cout<< endl << "complete dictionary"<<endl;
+    dictionary.Print_Dictionary();
 }
